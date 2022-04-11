@@ -17,14 +17,17 @@ import java.util.Optional;
 @Component
 public class UserCreationRunner implements ApplicationRunner {
 
-    @Autowired
-    private UserRepository resp;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private UserProperties userProperties;
+    private final UserRepository resp;
+    private final PasswordEncoder passwordEncoder;
+    private final UserProperties userProperties;
 
     private static final Logger LOG = LoggerFactory.getLogger(UserCreationRunner.class);
+
+    public UserCreationRunner(UserRepository resp, PasswordEncoder passwordEncoder, UserProperties userProperties) {
+        this.resp = resp;
+        this.passwordEncoder = passwordEncoder;
+        this.userProperties = userProperties;
+    }
 
 
     @Override

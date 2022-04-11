@@ -19,10 +19,14 @@ public class HighLevelStaticResource implements StaticResourceValidator {
     @Value("classpath:static/Level2/**")
     private Resource[] level2;
 
-    @Autowired
-    private StaticResourceService staticResourceService;
+    private final StaticResourceService staticResourceService;
 
     private List<String> staticResources;
+
+    @Autowired
+    public HighLevelStaticResource(StaticResourceService staticResourceService) {
+        this.staticResourceService = staticResourceService;
+    }
 
     @PostConstruct
     public void setList() {

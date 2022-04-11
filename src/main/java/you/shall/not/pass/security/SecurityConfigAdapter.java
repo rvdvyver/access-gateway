@@ -10,7 +10,6 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import you.shall.not.pass.repositories.UserRepository;
 import you.shall.not.pass.service.CustomUserDetailService;
 
 
@@ -18,34 +17,32 @@ import you.shall.not.pass.service.CustomUserDetailService;
 @EnableWebSecurity
 public class SecurityConfigAdapter extends WebSecurityConfigurerAdapter {
 
-    @Autowired
-    private UserRepository userRepository;
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+	}
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
-    }
+	@Autowired
+	public void configureGlobal(AuthenticationManagerBuilder authenticationManagerBuilder,
+								CustomUserDetailService customUserDetailService) throws Exception {
+		authenticationManagerBuilder
+				.userDetailsService(customUserDetailService)
+				.passwordEncoder(passwordEncoder());
+	}
 
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
-        authenticationManagerBuilder
-                .userDetailsService(new CustomUserDetailService(userRepository))
-                .passwordEncoder(passwordEncoder());
-    }
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and().csrf()
-                .disable()
-                .httpBasic()
-                .and()
-                .anonymous()
-                .disable()
-                .authorizeRequests()
-                .antMatchers("/access")
-                .permitAll();
-    }
+	@Override
+	protected void configure(HttpSecurity http) throws Exception {
+		http.sessionManagement()
+				.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+				.and().csrf()
+				.disable()
+				.httpBasic()
+				.and()
+				.anonymous()
+				.disable()
+				.authorizeRequests()
+				.antMatchers("/access")
+				.permitAll();
+	}
 
 }

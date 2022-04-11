@@ -23,23 +23,26 @@ public class SessionService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
 
-    @Autowired
-    private SessionRepository sessionRepository;
+    private final SessionRepository sessionRepository;
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
-    @Autowired
-    private CsrfProtectionService csrfProtectionService;
+    private final CsrfProtectionService csrfProtectionService;
 
-    @Autowired
-    private CookieService cookieService;
+    private final CookieService cookieService;
 
-    @Autowired
-    private DateService dateService;
+    private final DateService dateService;
 
     @Value("${session.expiry.seconds}")
     private int sessionExpirySeconds;
+
+    public SessionService(SessionRepository sessionRepository, UserService userService, CsrfProtectionService csrfProtectionService, CookieService cookieService, DateService dateService) {
+        this.sessionRepository = sessionRepository;
+        this.userService = userService;
+        this.csrfProtectionService = csrfProtectionService;
+        this.cookieService = cookieService;
+        this.dateService = dateService;
+    }
 
     public Optional<Session> findSessionByToken(String token) {
         Example<Session> example = Example.of(Session.builder()

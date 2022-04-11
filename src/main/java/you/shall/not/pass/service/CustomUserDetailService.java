@@ -2,12 +2,14 @@ package you.shall.not.pass.service;
 
 import lombok.Builder;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Component;
 import you.shall.not.pass.domain.User;
 import you.shall.not.pass.domain.Access;
 import you.shall.not.pass.repositories.UserRepository;
@@ -16,13 +18,15 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+@Component
 public class CustomUserDetailService implements UserDetailsService {
 
+    private final UserRepository repository;
+
+    @Autowired
     public CustomUserDetailService(UserRepository repository) {
         this.repository = repository;
     }
-
-    private final UserRepository repository;
 
     @Builder
     @Data

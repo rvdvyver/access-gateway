@@ -12,8 +12,12 @@ import java.util.Optional;
 @Service
 public class UserService {
 
+    private final UserRepository repository;
+
     @Autowired
-    private UserRepository repository;
+    public UserService(UserRepository repository) {
+        this.repository = repository;
+    }
 
     public User getUserByName(String name) {
         Example<User> example = Example.of(User.builder().userName(name).build());
