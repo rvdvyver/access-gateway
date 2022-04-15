@@ -27,12 +27,12 @@ import you.shall.not.pass.service.SessionService;
 
 @Component
 @Order(1)
-public class SecurityFilter implements Filter {
+public class GrantSecurityFilter implements Filter {
 
     public static final String SESSION_COOKIE = "GRANT";
     public static final String EXECUTE_FILTER_ONCE = "you.shall.not.pass.filter";
 
-    private static final Logger LOG = LoggerFactory.getLogger(SecurityFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GrantSecurityFilter.class);
 
     private final Gson gson;
     private final CookieService cookieService;
@@ -41,7 +41,7 @@ public class SecurityFilter implements Filter {
     private final CsrfProtectionService csrfProtectionService;
 
     @Autowired
-    public SecurityFilter(Gson gson, CookieService cookieService, SessionService sessionService, List<StaticResourceValidator> resourcesValidators, CsrfProtectionService csrfProtectionService) {
+    public GrantSecurityFilter(Gson gson, CookieService cookieService, SessionService sessionService, List<StaticResourceValidator> resourcesValidators, CsrfProtectionService csrfProtectionService) {
         this.gson = gson;
         this.cookieService = cookieService;
         this.sessionService = sessionService;

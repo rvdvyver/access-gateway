@@ -2,7 +2,6 @@ package you.shall.not.pass.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
@@ -16,7 +15,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Optional;
 
-import static you.shall.not.pass.filter.SecurityFilter.SESSION_COOKIE;
+import static you.shall.not.pass.filter.GrantSecurityFilter.SESSION_COOKIE;
 
 @Service
 public class SessionService {

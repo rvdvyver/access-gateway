@@ -14,7 +14,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import you.shall.not.pass.filter.SecurityFilter;
+import you.shall.not.pass.filter.GrantSecurityFilter;
 
 import javax.servlet.http.Cookie;
 
@@ -38,7 +38,7 @@ public class GateControllerTest {
 	MockMvc mvc;
 
 	@Autowired
-	private SecurityFilter securityFilter;
+	private GrantSecurityFilter grantSecurityFilter;
 
 	@Autowired
 	private WebApplicationContext context;
@@ -48,7 +48,7 @@ public class GateControllerTest {
 		mvc = MockMvcBuilders
 				.webAppContextSetup(context)
 				.apply(springSecurity())
-				.addFilter(securityFilter)
+				.addFilter(grantSecurityFilter)
 				.build();
 	}
 
