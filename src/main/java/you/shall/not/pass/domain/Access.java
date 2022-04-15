@@ -18,7 +18,7 @@ public enum Access {
                 gateKeeperGrant.level == Integer.valueOf(lvl)).findFirst();
     }
 
-    public boolean levelIsHigher(Access sessionAccess) {
+    public boolean isLevelHigherThanSessionAccessLevel(Access sessionAccess) {
         return sessionAccess == null
                 || this.level > sessionAccess.level;
     }

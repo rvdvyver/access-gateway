@@ -1,7 +1,7 @@
 package you.shall.not.pass.controller;
 
-import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -10,17 +10,16 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-
-import org.junit.Test;
+import you.shall.not.pass.filter.SecurityFilter;
 
 import javax.servlet.http.Cookie;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -39,6 +38,9 @@ public class GateControllerTest {
 	MockMvc mvc;
 
 	@Autowired
+	private SecurityFilter securityFilter;
+
+	@Autowired
 	private WebApplicationContext context;
 
 	@Before
@@ -46,6 +48,7 @@ public class GateControllerTest {
 		mvc = MockMvcBuilders
 				.webAppContextSetup(context)
 				.apply(springSecurity())
+				.addFilter(securityFilter)
 				.build();
 	}
 
@@ -61,6 +64,13 @@ public class GateControllerTest {
 	public void shouldFailLogin() throws Exception {
 		mvc.perform(MockMvcRequestBuilders.get("/access")
 				.with(httpBasic("1#bob", "1")))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	public void shouldFailLoginToIncorrectDomain() throws Exception {
+		mvc.perform(MockMvcRequestBuilders.get("/access")
+				.with(httpBasic("2#bob", "12341")))
 				.andExpect(status().isUnauthorized());
 	}
 
@@ -94,6 +104,17 @@ public class GateControllerTest {
 	}
 
 	@Test
+	public void shouldAccessResources() throws Exception {
+		MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.get("/resources"))
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String contentAsString = mvcResult.getResponse().getContentAsString();
+		assertTrue(contentAsString.contains("/Level1/low/access.html"));
+	}
+
+	@Test
 	public void shouldAccessLevel1Resources() throws Exception {
 		MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.get("/access")
 				.with(httpBasic("1#bob", "12341")))
@@ -115,6 +136,26 @@ public class GateControllerTest {
 
 		String contentAsString = levelOneRequestResponse.getResponse().getContentAsString();
 		assertTrue(contentAsString.contains("<h2>Sponge bob</h2>"));
+	}
+
+	@Test
+	public void shouldNotAccessLevel2Resources() throws Exception {
+		MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.get("/access")
+				.with(httpBasic("1#bob", "12341")))
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(status().isOk())
+				.andReturn();
+
+		MockHttpServletResponse response = mvcResult.getResponse();
+
+		Cookie csrfCookie = response.getCookie(CSRF_COOKIE_NAME);
+		Cookie grantCookie = response.getCookie(GRANT_COOKIE_NAME);
+
+		mvc.perform(MockMvcRequestBuilders.get("/Level2/high_access.html")
+				.header(XSRF_GUARD_NAME, csrfCookie.getValue())
+				.cookie(csrfCookie, grantCookie))
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(status().isForbidden());
 	}
 
 }

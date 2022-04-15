@@ -23,7 +23,6 @@ import you.shall.not.pass.dto.Violation;
 import you.shall.not.pass.exception.AccessGrantException;
 import you.shall.not.pass.filter.staticresource.StaticResourceValidator;
 import you.shall.not.pass.service.CookieService;
-import you.shall.not.pass.service.LogonUserService;
 import you.shall.not.pass.service.SessionService;
 
 @Component
@@ -101,7 +100,7 @@ public class SecurityFilter implements Filter {
         resourceValidator.ifPresent(validator -> {
             LOG.info("resource validator enforced {}", validator.requires());
             if (sessionService.isExpiredSession(sessionByToken)
-                    || validator.requires().levelIsHigher(grant)) {
+                    || validator.requires().isLevelHigherThanSessionAccessLevel(grant)) {
                 throw new AccessGrantException(validator.requires(), "invalid access level");
             }
             csrfProtectionService.validateCsrfCookie(request);
