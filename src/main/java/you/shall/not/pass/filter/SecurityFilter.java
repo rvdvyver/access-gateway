@@ -23,6 +23,7 @@ import you.shall.not.pass.dto.Violation;
 import you.shall.not.pass.exception.AccessGrantException;
 import you.shall.not.pass.filter.staticresource.StaticResourceValidator;
 import you.shall.not.pass.service.CookieService;
+import you.shall.not.pass.service.LogonUserService;
 import you.shall.not.pass.service.SessionService;
 
 @Component
@@ -35,13 +36,9 @@ public class SecurityFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(SecurityFilter.class);
 
     private final Gson gson;
-
     private final CookieService cookieService;
-
     private final SessionService sessionService;
-
     private final List<StaticResourceValidator> resourcesValidators;
-
     private final CsrfProtectionService csrfProtectionService;
 
     @Autowired
@@ -95,9 +92,11 @@ public class SecurityFilter implements Filter {
         final String cookieValue = cookieService.getCookieValue( request, SESSION_COOKIE);
         final Optional<Session> sessionByToken = sessionService.findSessionByToken(cookieValue);
         final String requestedUri = request.getRequestURI();
+
         LOG.info("incoming request {} with token {}", requestedUri, cookieValue);
         final Access grant = sessionByToken.map(Session::getGrant).orElse(null);
         LOG.info("user grant level {}", grant);
+
         final Optional<StaticResourceValidator> resourceValidator = getValidator(requestedUri);
         resourceValidator.ifPresent(validator -> {
             LOG.info("resource validator enforced {}", validator.requires());

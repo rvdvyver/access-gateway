@@ -19,13 +19,9 @@ import java.util.Optional;
 public class GateController {
 
 	private final SessionService sessionService;
-
 	private final CsrfProtectionService csrfProtectionService;
-
 	private final StaticResourceService resourceService;
-
 	private final CookieService cookieService;
-
 	private final Gson gson;
 
 	@Autowired

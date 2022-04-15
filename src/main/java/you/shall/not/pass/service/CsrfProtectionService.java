@@ -35,8 +35,11 @@ public class CsrfProtectionService {
     @Value("${csrf.expiry.seconds}")
     private int expiry;
 
-    @Autowired
     private CookieService cookieService;
+
+    public CsrfProtectionService(CookieService cookieService) {
+        this.cookieService = cookieService;
+    }
 
     public String generateToken() {
         return generateToken(STANDARD_SIZE_TOKEN);
@@ -61,8 +64,8 @@ public class CsrfProtectionService {
         LOG.info("incoming csrf cookie: {}", csrf);
         LOG.info("incoming xsrf value: {}", xsrfGuard);
 
-        if (csrf == null || xsrfGuard == null) {
-            throw new CsrfViolationException("You may not pass you seem to be missing something!");
+        if (csrf == null && xsrfGuard == null) {
+            throw new CsrfViolationException("Either the CSRF Token or the XSRF token is missing.");
         }
 
         final Matcher matcher = GUARD_PATTERN.matcher(csrf);
@@ -71,15 +74,17 @@ public class CsrfProtectionService {
         LOG.info("csrf cookie pattern guard passed: {}", matches);
 
         if (!matches) {
-            throw new CsrfViolationException("Dont try and fake your key, I know all!");
+            throw new CsrfViolationException("CSRF Token is not valid.");
         }
 
         long diff = getEpochSecondsDiff(csrf);
 
         LOG.info("csrf cookie expiry in {} secs", diff);
 
-        if (!csrf.equals(xsrfGuard) || diff <= 0) {
-            throw new CsrfViolationException("Two of one, which one is not the same!");
+        if (!csrf.equals(xsrfGuard)) {
+            throw new CsrfViolationException("CSRF/XSRF failed validation.");
+        } else if (diff <= 0) {
+            throw new CsrfViolationException("CSRF token expired.");
         }
     }
 

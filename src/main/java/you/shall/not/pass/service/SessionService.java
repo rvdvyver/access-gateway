@@ -66,6 +66,7 @@ public class SessionService {
     public Optional<String> authenticatedSession() {
         final String username = LogonUserService.getCurrentUser().orElseThrow(()
                 -> new RuntimeException("unknown user requesting session!"));
+
         final Access level = LogonUserService.getCurrentAccessLevel().orElseThrow(()
                 -> new RuntimeException("Invalid user access level!"));
 

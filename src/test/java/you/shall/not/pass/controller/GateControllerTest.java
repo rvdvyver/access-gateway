@@ -1,0 +1,96 @@
+package you.shall.not.pass.controller;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+
+import org.junit.Test;
+
+import javax.servlet.http.Cookie;
+
+import static org.junit.Assert.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@RunWith(SpringRunner.class)
+@AutoConfigureMockMvc
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class GateControllerTest {
+
+	private final static String CSRF_COOKIE_NAME = "CSRF";
+	private final static String XSRF_GUARD_NAME = "XSRF";
+	private static final String GRANT_COOKIE_NAME = "GRANT";
+
+	@Autowired
+	MockMvc mvc;
+
+	@Autowired
+	private WebApplicationContext context;
+
+	@Before
+	public void setup() {
+		mvc = MockMvcBuilders
+				.webAppContextSetup(context)
+				.apply(springSecurity())
+				.build();
+	}
+
+	@Test
+	public void shouldLogin() throws Exception {
+		mvc.perform(MockMvcRequestBuilders.get("/access")
+				.with(httpBasic("1#bob", "12341")))
+				.andExpect(status().isOk())
+				.andExpect(content().json("{'authenticated':true}"));
+	}
+
+	@Test
+	public void shouldFailLogin() throws Exception {
+		mvc.perform(MockMvcRequestBuilders.get("/access")
+				.with(httpBasic("1#bob", "1")))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	public void shouldLoginAndResponseHasGrantCookie() throws Exception {
+		MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.get("/access")
+				.with(httpBasic("1#bob", "12341")))
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(status().isOk())
+				.andReturn();
+
+		MockHttpServletResponse response = mvcResult.getResponse();
+
+		Cookie grantCookie = response.getCookie(GRANT_COOKIE_NAME);
+		assertNotNull(grantCookie);
+		assertTrue(grantCookie.getValue().length() >= 0);
+	}
+
+	@Test
+	public void shouldLoginAndResponseHasCsrfCookie() throws Exception {
+		MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.get("/access")
+				.with(httpBasic("1#bob", "12341")))
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(status().isOk())
+				.andReturn();
+
+		MockHttpServletResponse response = mvcResult.getResponse();
+
+		Cookie cookie = response.getCookie(CSRF_COOKIE_NAME);
+		assertTrue(cookie.getValue().length() >= 0);
+	}
+
+}

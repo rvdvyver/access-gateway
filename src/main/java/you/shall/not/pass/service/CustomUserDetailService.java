@@ -36,7 +36,7 @@ public class CustomUserDetailService implements UserDetailsService {
         char[] password;
     }
 
-    private UserGrantDetail getDetails(String lvl, User user)throws UsernameNotFoundException {
+    private UserGrantDetail getDetails(String lvl, User user) throws UsernameNotFoundException {
         UserGrantDetail.UserGrantDetailBuilder builder = UserGrantDetail.builder();
         Set<GrantedAuthority> grants = new HashSet<>();
         Access grant = Access.find(lvl).orElseThrow(()
