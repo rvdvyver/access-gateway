@@ -93,4 +93,28 @@ public class GateControllerTest {
 		assertTrue(cookie.getValue().length() >= 0);
 	}
 
+	@Test
+	public void shouldAccessLevel1Resources() throws Exception {
+		MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.get("/access")
+				.with(httpBasic("1#bob", "12341")))
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(status().isOk())
+				.andReturn();
+
+		MockHttpServletResponse response = mvcResult.getResponse();
+
+		Cookie csrfCookie = response.getCookie(CSRF_COOKIE_NAME);
+		Cookie grantCookie = response.getCookie(GRANT_COOKIE_NAME);
+
+		MvcResult levelOneRequestResponse = mvc.perform(MockMvcRequestBuilders.get("/Level1/low/access.html")
+				.header(XSRF_GUARD_NAME, csrfCookie.getValue())
+				.cookie(csrfCookie, grantCookie))
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(status().isOk())
+				.andReturn();
+
+		String contentAsString = levelOneRequestResponse.getResponse().getContentAsString();
+		assertTrue(contentAsString.contains("<h2>Sponge bob</h2>"));
+	}
+
 }
