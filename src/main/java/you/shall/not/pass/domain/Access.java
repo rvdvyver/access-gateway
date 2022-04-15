@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public enum Access {
+    Anonymous(0),
     Level1(1),
     Level2(2);
 
