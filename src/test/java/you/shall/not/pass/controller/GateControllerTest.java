@@ -10,6 +10,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -53,7 +54,7 @@ public class GateControllerTest {
 	}
 
 	@Test
-	public void shouldLogin() throws Exception {
+	public void shouldLoginWithValidCredentialsAndDomain() throws Exception {
 		mvc.perform(MockMvcRequestBuilders.get("/access")
 				.with(httpBasic("1#bob", "12341")))
 				.andExpect(status().isOk())
@@ -61,14 +62,26 @@ public class GateControllerTest {
 	}
 
 	@Test
-	public void shouldFailLogin() throws Exception {
+	public void shouldReturnGrantCookieWithAnyRequest() throws Exception {
+		Cookie cookie = mvc.perform(MockMvcRequestBuilders.get("/home"))
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getCookie(GRANT_COOKIE_NAME);
+
+		assertNotNull(cookie);
+		assertNotNull(cookie.getValue());
+	}
+
+	@Test
+	public void shouldFailLoginWithWrongPassword() throws Exception {
 		mvc.perform(MockMvcRequestBuilders.get("/access")
-				.with(httpBasic("1#bob", "1")))
+				.with(httpBasic("1#bob", "wrongPassword")))
 				.andExpect(status().isUnauthorized());
 	}
 
 	@Test
-	public void shouldFailLoginToIncorrectDomain() throws Exception {
+	public void shouldFailLoginWithValidCredentialsToIncorrectDomain() throws Exception {
 		mvc.perform(MockMvcRequestBuilders.get("/access")
 				.with(httpBasic("2#bob", "12341")))
 				.andExpect(status().isUnauthorized());
@@ -76,7 +89,7 @@ public class GateControllerTest {
 
 	@Test
 	public void shouldLoginAndResponseHasGrantCookie() throws Exception {
-		MockHttpServletResponse response = loginWithUser("1#bob", "12341");
+		MockHttpServletResponse response = loginWithUserWithExpectedStatus("1#bob", "12341", status().isOk());
 
 		Cookie grantCookie = response.getCookie(GRANT_COOKIE_NAME);
 		assertNotNull(grantCookie);
@@ -85,13 +98,13 @@ public class GateControllerTest {
 
 	@Test
 	public void shouldLoginAndResponseHasCsrfCookie() throws Exception {
-		MockHttpServletResponse response = loginWithUser("1#bob", "12341");
+		MockHttpServletResponse response = loginWithUserWithExpectedStatus("1#bob", "12341", status().isOk());
 		Cookie cookie = response.getCookie(CSRF_COOKIE_NAME);
 		assertTrue(cookie.getValue().length() >= 0);
 	}
 
 	@Test
-	public void shouldAccessResources() throws Exception {
+	public void shouldAccessResourcesPage() throws Exception {
 		MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.get("/resources"))
 				.andDo(MockMvcResultHandlers.print())
 				.andExpect(status().isOk())
@@ -103,17 +116,12 @@ public class GateControllerTest {
 
 	@Test
 	public void shouldAccessLevel1Resources() throws Exception {
-		MockHttpServletResponse response = loginWithUser("1#bob", "12341");
+		MockHttpServletResponse response = loginWithUserWithExpectedStatus("1#bob", "12341", status().isOk());
 
 		Cookie csrfCookie = response.getCookie(CSRF_COOKIE_NAME);
 		Cookie grantCookie = response.getCookie(GRANT_COOKIE_NAME);
 
-		MvcResult levelOneRequestResponse = mvc.perform(MockMvcRequestBuilders.get("/Level1/low/access.html")
-				.header(XSRF_GUARD_NAME, csrfCookie.getValue())
-				.cookie(csrfCookie, grantCookie))
-				.andDo(MockMvcResultHandlers.print())
-				.andExpect(status().isOk())
-				.andReturn();
+		MvcResult levelOneRequestResponse = requestResourceAt(csrfCookie, grantCookie, "/Level1/low/access.html", status().isOk());
 
 		String contentAsString = levelOneRequestResponse.getResponse().getContentAsString();
 		assertTrue(contentAsString.contains("<h2>Sponge bob</h2>"));
@@ -121,7 +129,7 @@ public class GateControllerTest {
 
 	@Test
 	public void shouldNotAccessLevel2Resources() throws Exception {
-		MockHttpServletResponse response = loginWithUser("1#bob", "12341");
+		MockHttpServletResponse response = loginWithUserWithExpectedStatus("1#bob", "12341", status().isOk());
 
 		Cookie csrfCookie = response.getCookie(CSRF_COOKIE_NAME);
 		Cookie grantCookie = response.getCookie(GRANT_COOKIE_NAME);
@@ -133,11 +141,21 @@ public class GateControllerTest {
 				.andExpect(status().isForbidden());
 	}
 
-	private MockHttpServletResponse loginWithUser(String username, String password) throws Exception {
+	private MvcResult requestResourceAt(Cookie csrfCookie, Cookie grantCookie, String urlTemplate, ResultMatcher status) throws Exception {
+		MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.get(urlTemplate)
+				.header(XSRF_GUARD_NAME, csrfCookie.getValue())
+				.cookie(csrfCookie, grantCookie))
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(status)
+				.andReturn();
+		return mvcResult;
+	}
+
+	private MockHttpServletResponse loginWithUserWithExpectedStatus(String username, String password, ResultMatcher expectedStatus) throws Exception {
 		MvcResult mvcResult = mvc.perform(MockMvcRequestBuilders.get("/access")
 				.with(httpBasic(username, password)))
 				.andDo(MockMvcResultHandlers.print())
-				.andExpect(status().isOk())
+				.andExpect(expectedStatus)
 				.andReturn();
 
 		return mvcResult.getResponse();

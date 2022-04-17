@@ -7,29 +7,30 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import you.shall.not.pass.domain.Access;
+
 import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Component
-public class LowLevelStaticResource implements StaticResourceValidator {
+public class PublicStaticResource implements StaticResourceValidator {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LowLevelStaticResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PublicStaticResource.class);
 
-    @Value("classpath:static/Level1/**")
-    private Resource[] level1;
+    @Value("classpath:static/public/**")
+    private Resource[] level0;
 
     private final StaticResourceService staticResourceService;
 
     private List<String> staticResources;
 
     @Autowired
-    public LowLevelStaticResource(StaticResourceService staticResourceService) {
+    public PublicStaticResource(StaticResourceService staticResourceService) {
         this.staticResourceService = staticResourceService;
     }
 
     @PostConstruct
     public void setList() {
-        staticResources = staticResourceService.resolveStaticResources(level1);
+        staticResources = staticResourceService.resolveStaticResources(level0);
         LOG.info("{} level resources: {}", requires(), staticResources);
     }
 
@@ -43,11 +44,11 @@ public class LowLevelStaticResource implements StaticResourceValidator {
 
     @Override
     public boolean allowsAnonymous() {
-        return false;
+        return true;
     }
 
     @Override
     public Access requires() {
-        return Access.Level1;
+        return Access.Level0;
     }
 }

@@ -23,7 +23,8 @@ public class LogonUserService {
             return targetList.stream().map(grantedAuthority ->
                     Access.valueOf(grantedAuthority.getAuthority())).findAny();
         }
-        return Optional.empty();
+
+        return Optional.of(Access.Level0);
     }
 
     public static Optional<String> getCurrentUser() {
