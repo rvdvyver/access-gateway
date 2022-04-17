@@ -31,9 +31,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class GateControllerTest {
 
-	private final static String CSRF_COOKIE_NAME = "CSRF";
-	private final static String XSRF_GUARD_NAME = "XSRF";
+	private static final String CSRF_COOKIE_NAME = "CSRF";
+	private static final String XSRF_GUARD_NAME = "XSRF";
 	private static final String GRANT_COOKIE_NAME = "GRANT";
+
 
 	@Autowired
 	MockMvc mvc;

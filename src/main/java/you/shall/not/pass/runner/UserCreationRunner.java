@@ -28,7 +28,6 @@ public class UserCreationRunner implements ApplicationRunner {
         this.userProperties = userProperties;
     }
 
-
     @Override
     public void run(ApplicationArguments applicationArguments) {
         try {

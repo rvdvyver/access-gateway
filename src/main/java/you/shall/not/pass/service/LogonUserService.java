@@ -35,5 +35,4 @@ public class LogonUserService {
         }
         return Optional.empty();
     }
-
 }

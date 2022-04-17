@@ -42,6 +42,7 @@ public class CustomUserDetailService implements UserDetailsService {
         Access grant = Access.find(lvl).orElseThrow(()
                 -> new UsernameNotFoundException("requested grant not supported"));
         builder.userName(user.getUserName());
+
         if (Access.Level1 == grant) {
             builder.password(user.getLevel1Password());
         } else if (Access.Level2 == grant) {

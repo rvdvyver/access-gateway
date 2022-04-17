@@ -24,7 +24,6 @@ public class CookieService {
                 .orElse(null);
     }
 
-
     public String createCookie(String name, String token, int expireInSeconds) {
         List<String> headerValues = new ArrayList<>();
         headerValues.add(name + "=" + token);
@@ -38,5 +37,4 @@ public class CookieService {
     public void addCookie(String cookie, HttpServletResponse response) {
         response.addHeader("Set-Cookie", cookie);
     }
-
 }
