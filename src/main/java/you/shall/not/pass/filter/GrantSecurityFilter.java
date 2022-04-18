@@ -99,17 +99,7 @@ public class GrantSecurityFilter implements Filter {
 	private void shallNotPassLogic(HttpServletRequest request, HttpServletResponse response) {
 		String sessionCookieValue = null;
 		sessionCookieValue = cookieService.getCookieValue(request, SESSION_COOKIE_NAME);
-
-		if (StringUtils.isEmpty(sessionCookieValue)) {
-			sessionCookieValue = csrfProtectionService.generateToken();
-			LOG.info("incoming request with no session cookie value, creating Anonymous session {}", sessionCookieValue);
-
-			String anonymousSessionCookie = sessionService.createAnonymousSession(sessionCookieValue);
-			cookieService.addCookie(anonymousSessionCookie, response);
-
-			request.setAttribute(SESSION_COOKIE_NAME, true);
-			request.setAttribute(SESSION_COOKIE_NAME, sessionCookieValue);
-		}
+		sessionCookieValue = handleAnonymousSession(request, response, sessionCookieValue);
 
 		final Optional<Session> sessionByToken = sessionService.findSessionByToken(sessionCookieValue);
 		final String requestedUri = request.getRequestURI();
@@ -129,6 +119,19 @@ public class GrantSecurityFilter implements Filter {
 			}
 			csrfProtectionService.validateCsrfCookie(request);
 		});
+	}
+
+	private String handleAnonymousSession(HttpServletRequest request, HttpServletResponse response, String sessionCookieValue) {
+		if (StringUtils.isEmpty(sessionCookieValue)) {
+			sessionCookieValue = csrfProtectionService.generateToken();
+			LOG.info("incoming request with no session cookie value, creating anonymous session {}", sessionCookieValue);
+
+			String anonymousSessionCookie = sessionService.createAnonymousSession(sessionCookieValue);
+			cookieService.addCookie(anonymousSessionCookie, response);
+
+			request.setAttribute(SESSION_COOKIE_NAME, sessionCookieValue);
+		}
+		return sessionCookieValue;
 	}
 
 	private Optional<StaticResourceValidator> getValidator(String requestedUri) {

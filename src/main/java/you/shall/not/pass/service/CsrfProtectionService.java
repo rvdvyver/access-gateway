@@ -103,5 +103,4 @@ public class CsrfProtectionService {
         final OffsetDateTime ofInstant = OffsetDateTime.ofInstant(ofEpochSecond, ZoneId.systemDefault());
         return OffsetDateTime.now().until(ofInstant, ChronoUnit.SECONDS);
     }
-
 }
