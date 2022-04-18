@@ -24,7 +24,6 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -36,7 +35,7 @@ import java.util.Optional;
 @Order(1)
 public class GrantSecurityFilter implements Filter {
 
-	public static final String SESSION_COOKIE = "GRANT";
+	public static final String SESSION_COOKIE_NAME = "GRANT";
 	public static final String EXECUTE_FILTER_ONCE = "you.shall.not.pass.filter";
 
 	private static final Logger LOG = LoggerFactory.getLogger(GrantSecurityFilter.class);
@@ -99,17 +98,24 @@ public class GrantSecurityFilter implements Filter {
 
 	private void shallNotPassLogic(HttpServletRequest request, HttpServletResponse response) {
 		String sessionCookieValue = null;
-		sessionCookieValue = cookieService.getCookieValue(request, SESSION_COOKIE);
+		sessionCookieValue = cookieService.getCookieValue(request, SESSION_COOKIE_NAME);
+
 		if (StringUtils.isEmpty(sessionCookieValue)) {
-			sessionCookieValue = cookieService.createCookie(SESSION_COOKIE, csrfProtectionService.generateToken(), sessionExpirySeconds);
-			response.addCookie(new Cookie(SESSION_COOKIE, sessionCookieValue));
+			sessionCookieValue = csrfProtectionService.generateToken();
+			LOG.info("incoming request with no session cookie value, creating Anonymous session {}", sessionCookieValue);
+
+			String anonymousSessionCookie = sessionService.createAnonymousSession(sessionCookieValue);
+			cookieService.addCookie(anonymousSessionCookie, response);
+
+			request.setAttribute(SESSION_COOKIE_NAME, true);
+			request.setAttribute(SESSION_COOKIE_NAME, sessionCookieValue);
 		}
 
 		final Optional<Session> sessionByToken = sessionService.findSessionByToken(sessionCookieValue);
 		final String requestedUri = request.getRequestURI();
 
 		LOG.info("incoming request {} with token {}", requestedUri, sessionCookieValue);
-		final Access grant = sessionByToken.map(Session::getGrant).orElse(Access.Level0);
+		final Access grant = sessionByToken.map(Session::getGrant).orElse(null);
 		LOG.info("user grant level {}", grant);
 
 		final Optional<StaticResourceValidator> resourceValidator = getValidator(requestedUri);
@@ -117,9 +123,7 @@ public class GrantSecurityFilter implements Filter {
 		resourceValidator.ifPresent(validator -> {
 			LOG.info("resource validator enforced {}", validator.requires());
 
-			if (validator.allowsAnonymous()) {
-				LOG.info("resource validator enforced {}", validator.requires());
-			} else if (sessionService.isExpiredSession(sessionByToken)
+			if (sessionService.isExpiredSession(sessionByToken)
 					|| validator.requires().isLevelHigherThanSessionAccessLevel(grant)) {
 				throw new AccessGrantException(validator.requires(), "invalid access level");
 			}

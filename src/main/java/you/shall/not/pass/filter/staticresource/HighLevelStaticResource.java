@@ -43,11 +43,6 @@ public class HighLevelStaticResource implements StaticResourceValidator {
     }
 
     @Override
-    public boolean allowsAnonymous() {
-        return false;
-    }
-
-    @Override
     public Access requires() {
         return Access.Level2;
     }

@@ -15,10 +15,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.Optional;
 
-import static you.shall.not.pass.filter.GrantSecurityFilter.SESSION_COOKIE;
-
 @Service
 public class SessionService {
+
+    public static final String SESSION_COOKIE = "GRANT";
 
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
 
@@ -62,7 +62,7 @@ public class SessionService {
                 Comparator.nullsLast(Comparator.reverseOrder()))).findFirst();
     }
 
-    public Optional<String> authenticatedSession() {
+    public Optional<String> authenticatedSession(String sessionCookieValue) {
         final String username = LogonUserService.getCurrentUser().orElseThrow(()
                 -> new RuntimeException("unknown user requesting session!"));
 
@@ -79,7 +79,7 @@ public class SessionService {
         }
 
         LOG.info("returning new session cookie");
-        return createNewSessionCookie(level, user);
+        return createNewSessionCookie(level, user, sessionCookieValue);
     }
 
     private Optional<String> createOldSessionCookie(Optional<Session> priorSession) {
@@ -87,24 +87,32 @@ public class SessionService {
                 -> new RuntimeException("This should never happen you may not pass!"));
         LocalDateTime cookieDate = dateService.asLocalDateTime(session.getDate());
         long diff = LocalDateTime.now().until(cookieDate, ChronoUnit.SECONDS);
-        return Optional.of(createCookie(session.getToken(), (int) diff));
+        return Optional.of(createSessionCookie(session.getToken(), (int) diff));
     }
 
-    private Optional<String> createNewSessionCookie(Access grant, User user) {
-        final String token = csrfProtectionService.generateToken();
+    private Optional<String> createNewSessionCookie(Access grant, User user, String token) {
+        Session session = sessionRepository.findByToken(token);
 
+        session.setDate(dateService.asDate(LocalDateTime.now().plusSeconds(sessionExpirySeconds)));
+        session.setGrant(grant);
+        session.setUserId(user.getId());
+
+        sessionRepository.save(session);
+        return Optional.of(createSessionCookie(token, sessionExpirySeconds));
+    }
+
+    public String createAnonymousSession(String token) {
         Session session = Session.builder()
                 .date(dateService.asDate(LocalDateTime.now().plusSeconds(sessionExpirySeconds)))
-                .grant(grant)
+                .grant(Access.Level0)
                 .token(token)
-                .userId(user.getId())
                 .build();
 
         sessionRepository.save(session);
-        return Optional.of(createCookie(token, sessionExpirySeconds));
+        return cookieService.createCookie(SESSION_COOKIE, token, sessionExpirySeconds);
     }
 
-    private String createCookie(String token, int expireInSeconds) {
+    private String createSessionCookie(String token, int expireInSeconds) {
         return cookieService.createCookie(SESSION_COOKIE, token, expireInSeconds);
     }
 
