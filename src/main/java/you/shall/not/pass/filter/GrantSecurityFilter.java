@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -17,6 +16,7 @@ import you.shall.not.pass.exception.CsrfViolationException;
 import you.shall.not.pass.filter.staticresource.StaticResourceValidator;
 import you.shall.not.pass.service.CookieService;
 import you.shall.not.pass.service.CsrfProtectionService;
+import you.shall.not.pass.service.SecureTokenService;
 import you.shall.not.pass.service.SessionService;
 
 import javax.servlet.Filter;
@@ -39,23 +39,25 @@ public class GrantSecurityFilter implements Filter {
 	public static final String EXECUTE_FILTER_ONCE = "you.shall.not.pass.filter";
 
 	private static final Logger LOG = LoggerFactory.getLogger(GrantSecurityFilter.class);
+	public static final int DEFAULT_SESSION_EXPIRY_SECONDS = 180;
 
 	private final Gson gson;
 	private final CookieService cookieService;
 	private final SessionService sessionService;
 	private final List<StaticResourceValidator> resourcesValidators;
 	private final CsrfProtectionService csrfProtectionService;
-
-	@Value("${session.expiry.seconds}")
-	private int sessionExpirySeconds;
+	private final SecureTokenService secureTokenService;
+	private final int sessionExpirySeconds;
 
 	@Autowired
-	public GrantSecurityFilter(Gson gson, CookieService cookieService, SessionService sessionService, List<StaticResourceValidator> resourcesValidators, CsrfProtectionService csrfProtectionService) {
+	public GrantSecurityFilter(Gson gson, CookieService cookieService, SessionService sessionService, List<StaticResourceValidator> resourcesValidators, CsrfProtectionService csrfProtectionService, SecureTokenService secureTokenService) {
 		this.gson = gson;
 		this.cookieService = cookieService;
 		this.sessionService = sessionService;
 		this.resourcesValidators = resourcesValidators;
 		this.csrfProtectionService = csrfProtectionService;
+		this.secureTokenService = secureTokenService;
+		this.sessionExpirySeconds = DEFAULT_SESSION_EXPIRY_SECONDS;
 	}
 
 	@Override
@@ -63,7 +65,7 @@ public class GrantSecurityFilter implements Filter {
 			throws IOException, ServletException {
 		try {
 			if (request.getAttribute(EXECUTE_FILTER_ONCE) == null) {
-				shallNotPassLogic((HttpServletRequest) request, (HttpServletResponse)response);
+				shallNotPassLogic((HttpServletRequest) request, (HttpServletResponse) response);
 			}
 			request.setAttribute(EXECUTE_FILTER_ONCE, true);
 			chain.doFilter(request, response);
@@ -99,7 +101,10 @@ public class GrantSecurityFilter implements Filter {
 	private void shallNotPassLogic(HttpServletRequest request, HttpServletResponse response) {
 		String sessionCookieValue = null;
 		sessionCookieValue = cookieService.getCookieValue(request, SESSION_COOKIE_NAME);
-		sessionCookieValue = handleAnonymousSession(request, response, sessionCookieValue);
+
+		if (StringUtils.isEmpty(sessionCookieValue)) {
+			sessionCookieValue = createAnonymousSession(request, response);
+		}
 
 		final Optional<Session> sessionByToken = sessionService.findSessionByToken(sessionCookieValue);
 		final String requestedUri = request.getRequestURI();
@@ -121,17 +126,17 @@ public class GrantSecurityFilter implements Filter {
 		});
 	}
 
-	private String handleAnonymousSession(HttpServletRequest request, HttpServletResponse response, String sessionCookieValue) {
-		if (StringUtils.isEmpty(sessionCookieValue)) {
-			sessionCookieValue = csrfProtectionService.generateToken();
-			LOG.info("incoming request with no session cookie value, creating anonymous session {}", sessionCookieValue);
+	private String createAnonymousSession(HttpServletRequest request, HttpServletResponse response) {
+		String sessionToken = secureTokenService.generateToken();
+		LOG.info("incoming request with no session cookie value, creating anonymous session {}", sessionToken);
 
-			String anonymousSessionCookie = sessionService.createAnonymousSession(sessionCookieValue);
-			cookieService.addCookie(anonymousSessionCookie, response);
+		sessionService.createAnonymousSession(sessionToken);
 
-			request.setAttribute(SESSION_COOKIE_NAME, sessionCookieValue);
-		}
-		return sessionCookieValue;
+		String anonymousSessionCookie = cookieService.createCookie(SESSION_COOKIE_NAME, sessionToken, sessionExpirySeconds);
+		cookieService.addCookie(anonymousSessionCookie, response);
+
+		request.setAttribute(SESSION_COOKIE_NAME, sessionToken);
+		return sessionToken;
 	}
 
 	private Optional<StaticResourceValidator> getValidator(String requestedUri) {

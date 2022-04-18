@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import you.shall.not.pass.domain.User;
 import you.shall.not.pass.domain.Access;
 import you.shall.not.pass.repositories.UserRepository;
@@ -18,7 +19,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-@Component
+@Service
 public class CustomUserDetailService implements UserDetailsService {
 
     private final UserRepository repository;

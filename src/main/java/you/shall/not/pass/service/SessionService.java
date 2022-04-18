@@ -23,13 +23,9 @@ public class SessionService {
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
 
     private final SessionRepository sessionRepository;
-
     private final UserService userService;
-
     private final CsrfProtectionService csrfProtectionService;
-
     private final CookieService cookieService;
-
     private final DateService dateService;
 
     @Value("${session.expiry.seconds}")
@@ -79,7 +75,7 @@ public class SessionService {
         }
 
         LOG.info("returning new session cookie");
-        return createNewSessionCookie(level, user, sessionCookieValue);
+        return updateSessionCookie(level, user, sessionCookieValue);
     }
 
     private Optional<String> createOldSessionCookie(Optional<Session> priorSession) {
@@ -90,7 +86,7 @@ public class SessionService {
         return Optional.of(createSessionCookie(session.getToken(), (int) diff));
     }
 
-    private Optional<String> createNewSessionCookie(Access grant, User user, String token) {
+    private Optional<String> updateSessionCookie(Access grant, User user, String token) {
         Session session = sessionRepository.findByToken(token);
 
         session.setDate(dateService.asDate(LocalDateTime.now().plusSeconds(sessionExpirySeconds)));
@@ -101,19 +97,17 @@ public class SessionService {
         return Optional.of(createSessionCookie(token, sessionExpirySeconds));
     }
 
-    public String createAnonymousSession(String token) {
+    public Session createAnonymousSession(String token) {
         Session session = Session.builder()
                 .date(dateService.asDate(LocalDateTime.now().plusSeconds(sessionExpirySeconds)))
                 .grant(Access.Level0)
                 .token(token)
                 .build();
 
-        sessionRepository.save(session);
-        return cookieService.createCookie(SESSION_COOKIE, token, sessionExpirySeconds);
+        return sessionRepository.save(session);
     }
 
     private String createSessionCookie(String token, int expireInSeconds) {
         return cookieService.createCookie(SESSION_COOKIE, token, expireInSeconds);
     }
-
 }

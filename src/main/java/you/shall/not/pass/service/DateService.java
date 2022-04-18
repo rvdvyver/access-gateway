@@ -1,7 +1,7 @@
 package you.shall.not.pass.service;
 
 
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -9,7 +9,7 @@ import java.time.ZoneId;
 import java.util.Date;
 
 
-@Component
+@Service
 public class DateService {
 
     public Date asDate(LocalDateTime localDateTime) {
