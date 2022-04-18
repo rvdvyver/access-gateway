@@ -35,8 +35,8 @@ public class GateControllerTest {
 	private static final String XSRF_GUARD_NAME = "XSRF";
 	private static final String GRANT_COOKIE_NAME = "GRANT";
 	private static final String PUBLIC_RESOURCE_PATH = "/css/main.css";
-	private static final String LEVEL_1_LOW_ACCESS_PATH = "/Level1/low/access.html";
-	private static final String LEVEL_2_HIGH_ACCESS_PATH = "/Level2/what/am/I/access.html";
+	private static final String LEVEL_1_RESOURCE_PATH = "/Level1/low/access.html";
+	private static final String LEVEL_2_RESOURCE_PATH = "/Level2/what/am/I/access.html";
 	private static final String VALID_LEVEL1_PASSWORD = "12341";
 	private static final String LEVEL_1_USERNAME = "1#bob";
 	private static final String LEVEL_2_USERNAME = "2#bob";
@@ -118,8 +118,8 @@ public class GateControllerTest {
 
 		String contentAsString = mvcResult.getResponse().getContentAsString();
 
-		assertTrue(contentAsString.contains(LEVEL_1_LOW_ACCESS_PATH));
-		assertTrue(contentAsString.contains(LEVEL_2_HIGH_ACCESS_PATH));
+		assertTrue(contentAsString.contains(LEVEL_1_RESOURCE_PATH));
+		assertTrue(contentAsString.contains(LEVEL_2_RESOURCE_PATH));
 	}
 
 	@Test
@@ -145,7 +145,7 @@ public class GateControllerTest {
 	@Test
 	public void shouldAccessLevel1Resources() throws Exception {
 		MockHttpServletResponse response = loginWithLevel1User();
-		MvcResult levelOneRequestResponse = requestResourceFromAndExpectStatus(response, LEVEL_1_LOW_ACCESS_PATH, status().isOk());
+		MvcResult levelOneRequestResponse = requestResourceFromAndExpectStatus(response, LEVEL_1_RESOURCE_PATH, status().isOk());
 
 		String contentAsString = levelOneRequestResponse.getResponse().getContentAsString();
 		assertTrue(contentAsString.contains("<h2>Sponge bob</h2>"));
@@ -154,7 +154,7 @@ public class GateControllerTest {
 	@Test
 	public void shouldAccessLevel2Resources() throws Exception {
 		MockHttpServletResponse response = loginWithUserWithExpectedStatus("2#bob", "test1", status().isOk());
-		MvcResult levelTwoRequestResponse = requestResourceFromAndExpectStatus(response, LEVEL_2_HIGH_ACCESS_PATH, status().isOk());
+		MvcResult levelTwoRequestResponse = requestResourceFromAndExpectStatus(response, LEVEL_2_RESOURCE_PATH, status().isOk());
 
 		String contentAsString = levelTwoRequestResponse.getResponse().getContentAsString();
 		assertTrue(contentAsString.contains("<h2>Smooth Criminal</h2>"));
